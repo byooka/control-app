@@ -4,14 +4,12 @@ import cs from 'classnames'
 import Asr from '@components/asr'
 import { App } from '@utils/const'
 import CodeEditor from '@/web/components/code-editor'
-import { contextBridge, ipcRenderer } from 'electron/renderer'
 
 import styles from './index.module.styl'
 
 enum DrawerType {
-  SCRIPT = 'SCRIPT'
+  SCRIPT = 'SCRIPT',
 }
-
 
 const Apps = () => {
   const [activeApp, setActiveApp] = useState<App[]>(appConfig[0])
@@ -19,6 +17,7 @@ const Apps = () => {
   const [code, setCode] = useState<string>('')
 
   const changeApp = (app: App) => {
+    if (!app.script?.hasExecuted) return
     setActiveApp(app)
   }
 
@@ -58,26 +57,26 @@ const Apps = () => {
     )
   }
 
-   const handleDrawer = async (id: string, type: string) => {
+  const handleDrawer = async (id: string, type: string) => {
     const result = await window.electronAPI.request({
       api: '/v2/getDefaultScript',
       params: {
-        scriptId: id
-      }
+        scriptId: id,
+      },
     })
     console.log('res----', result)
     setCode(result)
     setOpen(true)
-   }
+  }
 
   useEffect(() => {
-    window.onmessage = (event) => {
+    window.onmessage = event => {
       // event.source === window 意味着消息来自预加载脚本
       // 而不是来自iframe或其他来源
       if (event.source === window && event.data === 'main-world-port') {
-        const [ client ] = event.ports
+        const [client] = event.ports
         // 一旦我们有了这个端口，我们就可以直接与主进程通信
-        client.onmessage = (event) => {
+        client.onmessage = event => {
           console.log('from main process:', event.data)
           client.postMessage(event.data.test * 2)
         }
@@ -87,17 +86,18 @@ const Apps = () => {
 
   return (
     <div className={styles.app}>
-      <Asr
-        position={{ x: '80px', y: '210px', w: '36px', h: '36px' }}
-        app={activeApp}
-      />
+      <Asr position={{ x: '80px', y: '210px', w: '36px', h: '36px' }} app={activeApp} />
       {appConfig.map(a => {
         return (
           <div
             key={a.key}
-            className={cs(styles.website, {
-              [styles.active]: activeApp.key === a.key,
-            })}
+            className={cs(
+              styles.website,
+              {
+                [styles.active]: activeApp.key === a.key,
+              },
+              { [styles.disabled]: !a.script?.hasExecuted }
+            )}
             onClick={() => changeApp(a)}
           >
             <div className={styles.top}>
@@ -120,7 +120,7 @@ const Apps = () => {
         )
       })}
 
-      <Drawer title="脚本" size='large' onClose={() => setOpen(false)} open={open}>
+      <Drawer title="脚本" size="large" onClose={() => setOpen(false)} open={open}>
         <CodeEditor code={code} />
       </Drawer>
     </div>

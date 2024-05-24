@@ -14,6 +14,19 @@
     box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1019607843);
     &.active
       border: 1px solid red
+    &.disabled
+      position relative
+      &:after
+        content: ''
+        position absolute
+        top: 0
+        left: 0
+        right: 0
+        bottom: 0
+        background-color: rgba(0, 0, 0, 0.45)
+        border-radius: 8px
+        z-index 10
+        cursor not-allowed
     .top
       position relative
       width 100%
